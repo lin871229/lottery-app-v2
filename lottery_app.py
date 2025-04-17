@@ -1,6 +1,11 @@
 import streamlit as st
 import pandas as pd
 import random
+from datetime import datetime
+import pytz
+
+# 設定台北時區
+taipei_tz = pytz.timezone('Asia/Taipei')
 
 st.set_page_config(page_title="機構抽籤系統", layout="wide")
 st.title("🏠 特約機構抽籤系統")
@@ -54,9 +59,20 @@ if uploaded_file:
         available = df_match[~df_match["單位名稱"].isin(st.session_state.respite_history)]
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
-            st.session_state.respite_history.append(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            # 取得抽選時間 (台北時間)
+            draw_time = datetime.now(taipei_tz).strftime('%Y-%m-%d %H:%M:%S')
+            drawn_result = drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True)
+            drawn_result["抽選時間"] = draw_time
+            # 加入抽中的結果
+            st.session_state.respite_history.append({
+                "單位名稱": drawn["單位名稱"].iloc[0],
+                "設立區域": area_respite,
+                "地址": drawn["地址"].iloc[0],
+                "電話": drawn["電話"].iloc[0],
+                "抽選時間": draw_time
+            })
             st.success(f"✅ 居家喘息（{area_respite}）抽中：")
-            st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            st.dataframe(drawn_result)
         else:
             st.warning(f"🚫 居家喘息【{area_respite}】已無可抽籤機構。")
 
@@ -66,9 +82,20 @@ if uploaded_file:
         available = df_match[~df_match["單位名稱"].isin(st.session_state.shortterm_history)]
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
-            st.session_state.shortterm_history.append(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            # 取得抽選時間 (台北時間)
+            draw_time = datetime.now(taipei_tz).strftime('%Y-%m-%d %H:%M:%S')
+            drawn_result = drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True)
+            drawn_result["抽選時間"] = draw_time
+            # 加入抽中的結果
+            st.session_state.shortterm_history.append({
+                "單位名稱": drawn["單位名稱"].iloc[0],
+                "設立區域": area_shortterm,
+                "地址": drawn["地址"].iloc[0],
+                "電話": drawn["電話"].iloc[0],
+                "抽選時間": draw_time
+            })
             st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
-            st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            st.dataframe(drawn_result)
         else:
             st.warning(f"🚫 短照喘息【{area_shortterm}】已無可抽籤機構。")
 
@@ -76,10 +103,10 @@ if uploaded_file:
     st.subheader("已抽中的機構")
     all_drawn = st.session_state.respite_history + st.session_state.shortterm_history
     if all_drawn:
-        drawn_names = [f"{i+1}. {entry['單位名稱'].iloc[0]}" for i, entry in enumerate(all_drawn)]
+        drawn_names = [f"{i+1}. {entry['單位名稱']}" for i, entry in enumerate(all_drawn)]
         selected_drawing = st.selectbox("選擇已抽中的機構", options=drawn_names)
         for entry in all_drawn:
-            if f"{entry['單位名稱'].iloc[0]}" in selected_drawing:
+            if selected_drawing == f"{entry['單位名稱']}":
                 st.write(entry)
     else:
         st.info("目前還沒有抽中的機構。")

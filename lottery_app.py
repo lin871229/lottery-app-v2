@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import random
@@ -10,9 +11,10 @@ st.title("🏠 特約機構抽籤系統（寫入 Google Sheet）")
 
 # Google Sheets 設定
 SHEET_ID = "1a3aui6nxUoZNBLeT57-M76M9qqychHsLA6taAktSbAQ"
-WORKSHEET_NAME = "聖功醫院抽籤記錄表"
+WORKSHEET_NAME = "工作表1"
+CREDENTIAL_FILE = "strange-vortex-457113-c4-6d76d987bd08.json"
 
-# 使用 secrets.toml 建立 Google Sheets 連線
+# 建立 Google Sheets 連線
 @st.cache_resource
 def connect_to_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -31,6 +33,7 @@ if uploaded_file:
     sheet_name = "本市113年7月1日起特約居家式長照機構名冊"
     df_raw = xls.parse(sheet_name)
 
+    # 整理欄位
     df = df_raw.iloc[2:].copy()
     df.columns = [
         "編號", "備註", "單位名稱", "設立區域", "地址", "電話", "Email",
@@ -48,8 +51,8 @@ if uploaded_file:
     ]
 
     area_cols = ["居家喘息服務履約區域", "短照喘息服務履約區域"]
-    all_area_texts = df[area_cols[0]].fillna('') + '\\n' + df[area_cols[1]].fillna('')
-    split_texts = all_area_texts.str.split('[、，\\n()（）]')
+    all_area_texts = df[area_cols[0]].fillna('') + '\n' + df[area_cols[1]].fillna('')
+    split_texts = all_area_texts.str.split('[、，\n()（）]')
     all_areas = set()
     for lst in split_texts:
         all_areas.update([a.strip() for a in lst if a and "區" in a and a in kaohsiung_areas])
@@ -69,6 +72,7 @@ if uploaded_file:
             st.session_state.used_respite.add(drawn["單位名稱"].iloc[0])
             st.success(f"✅ 居家喘息（{area_respite}）抽中：")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            # 寫入 Google Sheet
             row = [
                 drawn["單位名稱"].iloc[0],
                 drawn["設立區域"].iloc[0],
@@ -91,6 +95,7 @@ if uploaded_file:
             st.session_state.used_shortterm.add(drawn["單位名稱"].iloc[0])
             st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            # 寫入 Google Sheet
             row = [
                 drawn["單位名稱"].iloc[0],
                 drawn["設立區域"].iloc[0],

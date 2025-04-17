@@ -74,6 +74,7 @@ if uploaded_file:
             # 將抽中的結果記錄到歷史中
             st.session_state.respites_history.append({
                 "單位名稱": drawn["單位名稱"].iloc[0],
+                "抽籤欄位": "居家喘息",
                 "抽籤區域": area_respite,
                 "抽選時間": now.strftime('%Y-%m-%d %H:%M:%S')
             })
@@ -95,6 +96,7 @@ if uploaded_file:
             # 將抽中的結果記錄到歷史中
             st.session_state.shortterms_history.append({
                 "單位名稱": drawn["單位名稱"].iloc[0],
+                "抽籤欄位": "短照喘息",
                 "抽籤區域": area_shortterm,
                 "抽選時間": now.strftime('%Y-%m-%d %H:%M:%S')
             })
@@ -108,7 +110,7 @@ if uploaded_file:
         # 將歷史紀錄顯示為下拉選單
         history_options = []
         for record in st.session_state.respites_history + st.session_state.shortterms_history:
-            history_options.append(f"{record['單位名稱']} - {record['抽籤區域']} (時間：{record['抽選時間']})")
+            history_options.append(f"{record['單位名稱']} - {record['抽籤欄位']} (區域：{record['抽籤區域']}) (時間：{record['抽選時間']})")
         
         selected_history = st.selectbox("請選擇歷史抽籤結果", history_options)
 

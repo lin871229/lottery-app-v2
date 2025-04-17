@@ -8,6 +8,13 @@ st.title("🏠 特約機構抽籤系統")
 # 上傳 Excel 檔案
 uploaded_file = st.file_uploader("請上傳特約機構名冊 Excel 檔案", type=["xlsx"])
 
+# 初始化抽籤紀錄
+if 'respite_history' not in st.session_state:
+    st.session_state.respite_history = []
+
+if 'shortterm_history' not in st.session_state:
+    st.session_state.shortterm_history = []
+
 if uploaded_file:
     xls = pd.ExcelFile(uploaded_file)
     sheet_name = "本市113年7月1日起特約居家式長照機構名冊"
@@ -40,34 +47,28 @@ if uploaded_file:
         all_areas.update([a.strip() for a in lst if a and "區" in a and a in kaohsiung_areas])
     area_options = sorted(all_areas)
 
-    # 初始化抽籤紀錄
-    if 'used_respite' not in st.session_state:
-        st.session_state.used_respite = set()
-    if 'used_shortterm' not in st.session_state:
-        st.session_state.used_shortterm = set()
-
     # Sidebar 抽籤控制
     area_respite = st.sidebar.selectbox("居家喘息", area_options, key="respite_area")
     if st.sidebar.button("抽籤", key="draw_respite"):
         df_match = df[df["居家喘息服務履約區域"].fillna('').str.contains(area_respite)]
-        available = df_match[~df_match["單位名稱"].isin(st.session_state.used_respite)]
+        available = df_match[~df_match["單位名稱"].isin(st.session_state.respite_history)]
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
-            st.session_state.used_respite.add(drawn["單位名稱"].iloc[0])
-            st.success(f"✅ 居家喘息（{area_respite}）抽中：")
             st.session_state.respite_history.append(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            st.success(f"✅ 居家喘息（{area_respite}）抽中：")
+            st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
         else:
             st.warning(f"🚫 居家喘息【{area_respite}】已無可抽籤機構。")
 
     area_shortterm = st.sidebar.selectbox("短照喘息", area_options, key="shortterm_area")
     if st.sidebar.button("抽籤", key="draw_shortterm"):
         df_match = df[df["短照喘息服務履約區域"].fillna('').str.contains(area_shortterm)]
-        available = df_match[~df_match["單位名稱"].isin(st.session_state.used_shortterm)]
+        available = df_match[~df_match["單位名稱"].isin(st.session_state.shortterm_history)]
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
-            st.session_state.used_shortterm.add(drawn["單位名稱"].iloc[0])
-            st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
             st.session_state.shortterm_history.append(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+            st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
+            st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
         else:
             st.warning(f"🚫 短照喘息【{area_shortterm}】已無可抽籤機構。")
 

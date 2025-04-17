@@ -1,9 +1,34 @@
 import streamlit as st
 import pandas as pd
 import random
+from supabase import create_client, Client
 
+# Supabase 資料庫 URL 和 API Key
+url = "https://lnywyoqesxmwupnuhsrq.supabase.co"  # 請替換為你自己的 URL
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxueXd5b3Flc3htd3VwbnVoc3JxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4OTgyMzYsImV4cCI6MjA2MDQ3NDIzNn0.ipQbPelY9MbnlgMBHrmrbjGsT1plNgkIDZcjJrTtQJw"  # 請替換為你的 API Key
+
+# 創建 Supabase 客戶端
+supabase: Client = create_client(url, key)
+
+# 儲存抽籤結果到 Supabase
+def record_lottery_result(user_id, area, unit_name):
+    data = {
+        "user_id": user_id,
+        "area": area,
+        "unit_name": unit_name,
+    }
+    response = supabase.table("lottery_records").insert(data).execute()
+    if response.status_code == 201:
+        st.success(f"✅ 成功記錄抽籤結果：{unit_name}，{area}")
+    else:
+        st.error(f"🚫 記錄抽籤結果失敗：{response.status_code}")
+
+# 設置 Streamlit 頁面配置
 st.set_page_config(page_title="機構抽籤系統", layout="wide")
 st.title("🏠 特約機構抽籤系統")
+
+# 假設用戶 ID，這裡應該來自登錄系統
+user_id = 1  # 可以根據用戶登錄信息動態改變
 
 # 上傳 Excel 檔案
 uploaded_file = st.file_uploader("請上傳特約機構名冊 Excel 檔案", type=["xlsx"])
@@ -54,6 +79,9 @@ if uploaded_file:
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
             st.session_state.used_respite.add(drawn["單位名稱"].iloc[0])
+            unit_name = drawn["單位名稱"].iloc[0]
+            # 記錄抽籤結果
+            record_lottery_result(user_id=user_id, area=area_respite, unit_name=unit_name)
             st.success(f"✅ 居家喘息（{area_respite}）抽中：")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
         else:
@@ -66,6 +94,9 @@ if uploaded_file:
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
             st.session_state.used_shortterm.add(drawn["單位名稱"].iloc[0])
+            unit_name = drawn["單位名稱"].iloc[0]
+            # 記錄抽籤結果
+            record_lottery_result(user_id=user_id, area=area_shortterm, unit_name=unit_name)
             st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
         else:

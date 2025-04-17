@@ -4,21 +4,15 @@ import random
 from datetime import datetime
 import pytz
 
-# 設定台北時區
+# 設定台北時間
 taipei_tz = pytz.timezone('Asia/Taipei')
+now = datetime.now(taipei_tz)
 
 st.set_page_config(page_title="機構抽籤系統", layout="wide")
 st.title("🏠 特約機構抽籤系統")
 
 # 上傳 Excel 檔案
 uploaded_file = st.file_uploader("請上傳特約機構名冊 Excel 檔案", type=["xlsx"])
-
-# 初始化抽籤紀錄
-if 'respite_history' not in st.session_state:
-    st.session_state.respite_history = []
-
-if 'shortterm_history' not in st.session_state:
-    st.session_state.shortterm_history = []
 
 if uploaded_file:
     xls = pd.ExcelFile(uploaded_file)
@@ -52,58 +46,38 @@ if uploaded_file:
         all_areas.update([a.strip() for a in lst if a and "區" in a and a in kaohsiung_areas])
     area_options = sorted(all_areas)
 
-    # 顯示已抽中的機構，使用 selectbox 滾動選單方式呈現
-    st.subheader("已抽中的機構")
-    all_drawn = st.session_state.respite_history + st.session_state.shortterm_history
-    if all_drawn:
-        drawn_names = [f"{i+1}. {entry['單位名稱']} - {entry['來自抽籤區域']}" for i, entry in enumerate(all_drawn)]
-        selected_drawing = st.selectbox("選擇已抽中的機構", options=drawn_names)
-        for entry in all_drawn:
-            if selected_drawing == f"{entry['單位名稱']} - {entry['來自抽籤區域']}":
-                st.write(entry)
-    else:
-        st.info("目前還沒有抽中的機構。")
+    # 初始化抽籤紀錄
+    if 'used_respite' not in st.session_state:
+        st.session_state.used_respite = set()
+    if 'used_shortterm' not in st.session_state:
+        st.session_state.used_shortterm = set()
 
     # Sidebar 抽籤控制
     area_respite = st.sidebar.selectbox("居家喘息", area_options, key="respite_area")
     if st.sidebar.button("抽籤", key="draw_respite"):
         df_match = df[df["居家喘息服務履約區域"].fillna('').str.contains(area_respite)]
-        available = df_match[~df_match["單位名稱"].isin(st.session_state.respite_history)]
+        available = df_match[~df_match["單位名稱"].isin(st.session_state.used_respite)]
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
-            # 取得抽選時間 (台北時間)
-            draw_time = datetime.now(taipei_tz).strftime('%Y-%m-%d %H:%M:%S')
-            # 儲存抽中的機構名稱及抽選區域
-            st.session_state.respite_history.append({
-                "單位名稱": drawn["單位名稱"].iloc[0],
-                "來自抽籤區域": "居家喘息",
-                "抽選時間": draw_time
-            })
-            st.success(f"✅ 居家喘息（{area_respite}）抽中：")
-            st.write(f"單位名稱：{drawn['單位名稱'].iloc[0]}")
-            st.write(f"來自抽籤區域：居家喘息")
-            st.write(f"抽選時間：{draw_time}")
+            st.session_state.used_respite.add(drawn["單位名稱"].iloc[0])
+            # 顯示抽中的單位名稱及抽籤區域
+            st.success(f"✅ 抽中單位：{drawn['單位名稱'].iloc[0]}")
+            st.info(f"來自抽籤區域：{area_respite} (抽選時間：{now.strftime('%Y-%m-%d %H:%M:%S')})")
+            st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
         else:
             st.warning(f"🚫 居家喘息【{area_respite}】已無可抽籤機構。")
 
     area_shortterm = st.sidebar.selectbox("短照喘息", area_options, key="shortterm_area")
     if st.sidebar.button("抽籤", key="draw_shortterm"):
         df_match = df[df["短照喘息服務履約區域"].fillna('').str.contains(area_shortterm)]
-        available = df_match[~df_match["單位名稱"].isin(st.session_state.shortterm_history)]
+        available = df_match[~df_match["單位名稱"].isin(st.session_state.used_shortterm)]
         if len(available) > 0:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
-            # 取得抽選時間 (台北時間)
-            draw_time = datetime.now(taipei_tz).strftime('%Y-%m-%d %H:%M:%S')
-            # 儲存抽中的機構名稱及抽選區域
-            st.session_state.shortterm_history.append({
-                "單位名稱": drawn["單位名稱"].iloc[0],
-                "來自抽籤區域": "短照喘息",
-                "抽選時間": draw_time
-            })
-            st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
-            st.write(f"單位名稱：{drawn['單位名稱'].iloc[0]}")
-            st.write(f"來自抽籤區域：短照喘息")
-            st.write(f"抽選時間：{draw_time}")
+            st.session_state.used_shortterm.add(drawn["單位名稱"].iloc[0])
+            # 顯示抽中的單位名稱及抽籤區域
+            st.success(f"✅ 抽中單位：{drawn['單位名稱'].iloc[0]}")
+            st.info(f"來自抽籤區域：{area_shortterm} (抽選時間：{now.strftime('%Y-%m-%d %H:%M:%S')})")
+            st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
         else:
             st.warning(f"🚫 短照喘息【{area_shortterm}】已無可抽籤機構。")
 

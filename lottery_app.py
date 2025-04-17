@@ -11,13 +11,12 @@ st.title("🏠 特約機構抽籤系統（寫入 Google Sheet）")
 # Google Sheets 設定
 SHEET_ID = "1a3aui6nxUoZNBLeT57-M76M9qqychHsLA6taAktSbAQ"
 WORKSHEET_NAME = "聖功醫院抽籤記錄表"
-CREDENTIAL_FILE = "strange-vortex-457113-c4-6d76d987bd08.json"
 
-# 建立 Google Sheets 連線
+# 使用 secrets.toml 建立 Google Sheets 連線
 @st.cache_resource
 def connect_to_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIAL_FILE, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(dict(st.secrets["gcp_service_account"]), scope)
     client = gspread.authorize(creds)
     sheet = client.open_by_key(SHEET_ID).worksheet(WORKSHEET_NAME)
     return sheet
@@ -32,7 +31,6 @@ if uploaded_file:
     sheet_name = "本市113年7月1日起特約居家式長照機構名冊"
     df_raw = xls.parse(sheet_name)
 
-    # 整理欄位
     df = df_raw.iloc[2:].copy()
     df.columns = [
         "編號", "備註", "單位名稱", "設立區域", "地址", "電話", "Email",
@@ -40,7 +38,6 @@ if uploaded_file:
         "短照喘息服務履約區域", "服務時段", "承辦人員"
     ]
 
-    # 高雄市行政區名單
     kaohsiung_areas = [
         "鹽埕區", "鼓山區", "左營區", "楠梓區", "三民區", "新興區", "前金區",
         "苓雅區", "前鎮區", "旗津區", "小港區", "鳳山區", "林園區", "大寮區",
@@ -50,7 +47,6 @@ if uploaded_file:
         "茂林區", "桃源區", "那瑪夏區"
     ]
 
-    # 萃取可用區域
     area_cols = ["居家喘息服務履約區域", "短照喘息服務履約區域"]
     all_area_texts = df[area_cols[0]].fillna('') + '\\n' + df[area_cols[1]].fillna('')
     split_texts = all_area_texts.str.split('[、，\\n()（）]')
@@ -59,13 +55,11 @@ if uploaded_file:
         all_areas.update([a.strip() for a in lst if a and "區" in a and a in kaohsiung_areas])
     area_options = sorted(all_areas)
 
-    # 初始化 session 狀態
     if 'used_respite' not in st.session_state:
         st.session_state.used_respite = set()
     if 'used_shortterm' not in st.session_state:
         st.session_state.used_shortterm = set()
 
-    # 居家喘息
     area_respite = st.sidebar.selectbox("居家喘息", area_options, key="respite_area")
     if st.sidebar.button("抽籤", key="draw_respite"):
         df_match = df[df["居家喘息服務履約區域"].fillna('').str.contains(area_respite)]
@@ -75,7 +69,6 @@ if uploaded_file:
             st.session_state.used_respite.add(drawn["單位名稱"].iloc[0])
             st.success(f"✅ 居家喘息（{area_respite}）抽中：")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
-            # 寫入 Google Sheet
             row = [
                 drawn["單位名稱"].iloc[0],
                 drawn["設立區域"].iloc[0],
@@ -89,7 +82,6 @@ if uploaded_file:
         else:
             st.warning(f"🚫 居家喘息【{area_respite}】已無可抽籤機構。")
 
-    # 短照喘息
     area_shortterm = st.sidebar.selectbox("短照喘息", area_options, key="shortterm_area")
     if st.sidebar.button("抽籤", key="draw_shortterm"):
         df_match = df[df["短照喘息服務履約區域"].fillna('').str.contains(area_shortterm)]
@@ -99,7 +91,6 @@ if uploaded_file:
             st.session_state.used_shortterm.add(drawn["單位名稱"].iloc[0])
             st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
-            # 寫入 Google Sheet
             row = [
                 drawn["單位名稱"].iloc[0],
                 drawn["設立區域"].iloc[0],

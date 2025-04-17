@@ -52,6 +52,12 @@ if uploaded_file:
     if 'used_shortterm' not in st.session_state:
         st.session_state.used_shortterm = set()
 
+    # 初始化抽籤歷史紀錄
+    if 'respites_history' not in st.session_state:
+        st.session_state.respites_history = []
+    if 'shortterms_history' not in st.session_state:
+        st.session_state.shortterms_history = []
+
     # Sidebar 抽籤控制
     area_respite = st.sidebar.selectbox("居家喘息", area_options, key="respite_area")
     if st.sidebar.button("抽籤", key="draw_respite"):
@@ -64,6 +70,13 @@ if uploaded_file:
             st.success(f"✅ 抽中單位：{drawn['單位名稱'].iloc[0]}")
             st.info(f"來自抽籤區域：{area_respite} (抽選時間：{now.strftime('%Y-%m-%d %H:%M:%S')})")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+
+            # 將抽中的結果記錄到歷史中
+            st.session_state.respites_history.append({
+                "單位名稱": drawn["單位名稱"].iloc[0],
+                "抽籤區域": area_respite,
+                "抽選時間": now.strftime('%Y-%m-%d %H:%M:%S')
+            })
         else:
             st.warning(f"🚫 居家喘息【{area_respite}】已無可抽籤機構。")
 
@@ -78,8 +91,24 @@ if uploaded_file:
             st.success(f"✅ 抽中單位：{drawn['單位名稱'].iloc[0]}")
             st.info(f"來自抽籤區域：{area_shortterm} (抽選時間：{now.strftime('%Y-%m-%d %H:%M:%S')})")
             st.dataframe(drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True))
+
+            # 將抽中的結果記錄到歷史中
+            st.session_state.shortterms_history.append({
+                "單位名稱": drawn["單位名稱"].iloc[0],
+                "抽籤區域": area_shortterm,
+                "抽選時間": now.strftime('%Y-%m-%d %H:%M:%S')
+            })
         else:
             st.warning(f"🚫 短照喘息【{area_shortterm}】已無可抽籤機構。")
+
+    # 顯示抽籤歷史
+    if st.session_state.respites_history or st.session_state.shortterms_history:
+        st.subheader("歷史抽籤結果")
+        
+        # 顯示所有歷史紀錄
+        all_history = st.session_state.respites_history + st.session_state.shortterms_history
+        all_history_df = pd.DataFrame(all_history)
+        st.dataframe(all_history_df)
 
 else:
     st.info("請先上傳 Excel 檔案。")

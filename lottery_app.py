@@ -52,6 +52,18 @@ if uploaded_file:
         all_areas.update([a.strip() for a in lst if a and "區" in a and a in kaohsiung_areas])
     area_options = sorted(all_areas)
 
+    # 顯示已抽中的機構，使用 selectbox 滾動選單方式呈現
+    st.subheader("已抽中的機構")
+    all_drawn = st.session_state.respite_history + st.session_state.shortterm_history
+    if all_drawn:
+        drawn_names = [f"{i+1}. {entry['單位名稱']} - {entry['來自抽籤區域']}" for i, entry in enumerate(all_drawn)]
+        selected_drawing = st.selectbox("選擇已抽中的機構", options=drawn_names)
+        for entry in all_drawn:
+            if selected_drawing == f"{entry['單位名稱']} - {entry['來自抽籤區域']}":
+                st.write(entry)
+    else:
+        st.info("目前還沒有抽中的機構。")
+
     # Sidebar 抽籤控制
     area_respite = st.sidebar.selectbox("居家喘息", area_options, key="respite_area")
     if st.sidebar.button("抽籤", key="draw_respite"):
@@ -95,16 +107,5 @@ if uploaded_file:
         else:
             st.warning(f"🚫 短照喘息【{area_shortterm}】已無可抽籤機構。")
 
-    # 顯示已抽中的機構，使用 selectbox 滾動選單方式呈現
-    st.subheader("已抽中的機構")
-    all_drawn = st.session_state.respite_history + st.session_state.shortterm_history
-    if all_drawn:
-        drawn_names = [f"{i+1}. {entry['單位名稱']} - {entry['來自抽籤區域']}" for i, entry in enumerate(all_drawn)]
-        selected_drawing = st.selectbox("選擇已抽中的機構", options=drawn_names)
-        for entry in all_drawn:
-            if selected_drawing == f"{entry['單位名稱']} - {entry['來自抽籤區域']}":
-                st.write(entry)
-    else:
-        st.info("目前還沒有抽中的機構。")
 else:
     st.info("請先上傳 Excel 檔案。")

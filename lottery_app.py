@@ -21,14 +21,17 @@ if uploaded_file:
         "短照喘息服務履約區域", "服務時段", "承辦人員"
     ]
 
-    # 高雄區域名單
+    # 正確的高雄市38區行政區名單
     kaohsiung_areas = [
-        "苓雅區", "三民區", "鳳山區", "左營區", "楠梓區", "小港區", "鼓山區",
-        "鹽埕區", "前金區", "新興區", "旗山區", "旗津區", "苓雅分區", "三民分區",
-        "左楠分區", "小港分區", "岡山區", "橋頭區", "林園區", "大寮區", "大樹區"
+        "鹽埕區", "鼓山區", "左營區", "楠梓區", "三民區", "新興區", "前金區",
+        "苓雅區", "前鎮區", "旗津區", "小港區", "鳳山區", "林園區", "大寮區",
+        "大樹區", "大社區", "仁武區", "鳥松區", "岡山區", "橋頭區", "燕巢區",
+        "田寮區", "阿蓮區", "路竹區", "湖內區", "茄萣區", "永安區", "彌陀區",
+        "梓官區", "旗山區", "美濃區", "六龜區", "甲仙區", "杉林區", "內門區",
+        "茂林區", "桃源區", "那瑪夏區"
     ]
 
-    # 擷取所有出現過的區域
+    # 擷取資料中符合高雄區域的區名
     area_cols = ["居家喘息服務履約區域", "短照喘息服務履約區域"]
     all_area_texts = df[area_cols[0]].fillna('') + '\\n' + df[area_cols[1]].fillna('')
     split_texts = all_area_texts.str.split('[、，\\n()（）]')
@@ -37,13 +40,13 @@ if uploaded_file:
         all_areas.update([a.strip() for a in lst if a and "區" in a and a in kaohsiung_areas])
     area_options = sorted(all_areas)
 
-    # Session state 初始化
+    # 初始化抽籤紀錄
     if 'used_respite' not in st.session_state:
         st.session_state.used_respite = set()
     if 'used_shortterm' not in st.session_state:
         st.session_state.used_shortterm = set()
 
-    # Sidebar 選項
+    # Sidebar 抽籤控制
     area_respite = st.sidebar.selectbox("居家喘息", area_options, key="respite_area")
     if st.sidebar.button("抽籤", key="draw_respite"):
         df_match = df[df["居家喘息服務履約區域"].fillna('').str.contains(area_respite)]

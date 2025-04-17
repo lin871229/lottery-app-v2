@@ -61,18 +61,16 @@ if uploaded_file:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
             # 取得抽選時間 (台北時間)
             draw_time = datetime.now(taipei_tz).strftime('%Y-%m-%d %H:%M:%S')
-            drawn_result = drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True)
-            drawn_result["抽選時間"] = draw_time
-            # 加入抽中的結果
+            # 儲存抽中的機構名稱及抽選區域
             st.session_state.respite_history.append({
                 "單位名稱": drawn["單位名稱"].iloc[0],
-                "設立區域": area_respite,
-                "地址": drawn["地址"].iloc[0],
-                "電話": drawn["電話"].iloc[0],
+                "來自抽籤區域": "居家喘息",
                 "抽選時間": draw_time
             })
             st.success(f"✅ 居家喘息（{area_respite}）抽中：")
-            st.dataframe(drawn_result)
+            st.write(f"單位名稱：{drawn['單位名稱'].iloc[0]}")
+            st.write(f"來自抽籤區域：居家喘息")
+            st.write(f"抽選時間：{draw_time}")
         else:
             st.warning(f"🚫 居家喘息【{area_respite}】已無可抽籤機構。")
 
@@ -84,18 +82,16 @@ if uploaded_file:
             drawn = available.sample(n=1, random_state=random.randint(1, 9999))
             # 取得抽選時間 (台北時間)
             draw_time = datetime.now(taipei_tz).strftime('%Y-%m-%d %H:%M:%S')
-            drawn_result = drawn[["單位名稱", "設立區域", "地址", "電話"]].reset_index(drop=True)
-            drawn_result["抽選時間"] = draw_time
-            # 加入抽中的結果
+            # 儲存抽中的機構名稱及抽選區域
             st.session_state.shortterm_history.append({
                 "單位名稱": drawn["單位名稱"].iloc[0],
-                "設立區域": area_shortterm,
-                "地址": drawn["地址"].iloc[0],
-                "電話": drawn["電話"].iloc[0],
+                "來自抽籤區域": "短照喘息",
                 "抽選時間": draw_time
             })
             st.success(f"✅ 短照喘息（{area_shortterm}）抽中：")
-            st.dataframe(drawn_result)
+            st.write(f"單位名稱：{drawn['單位名稱'].iloc[0]}")
+            st.write(f"來自抽籤區域：短照喘息")
+            st.write(f"抽選時間：{draw_time}")
         else:
             st.warning(f"🚫 短照喘息【{area_shortterm}】已無可抽籤機構。")
 
@@ -103,10 +99,10 @@ if uploaded_file:
     st.subheader("已抽中的機構")
     all_drawn = st.session_state.respite_history + st.session_state.shortterm_history
     if all_drawn:
-        drawn_names = [f"{i+1}. {entry['單位名稱']}" for i, entry in enumerate(all_drawn)]
+        drawn_names = [f"{i+1}. {entry['單位名稱']} - {entry['來自抽籤區域']}" for i, entry in enumerate(all_drawn)]
         selected_drawing = st.selectbox("選擇已抽中的機構", options=drawn_names)
         for entry in all_drawn:
-            if selected_drawing == f"{entry['單位名稱']}":
+            if selected_drawing == f"{entry['單位名稱']} - {entry['來自抽籤區域']}":
                 st.write(entry)
     else:
         st.info("目前還沒有抽中的機構。")
